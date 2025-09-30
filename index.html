@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🇳🇱 Nederlandse Grammatica Trainer</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-ghost:#eaf2ff;
+    --green:#10b981; --orange:#f59e0b; --red:#ef4444; --purple:#9333ea;
+    --ink:#111; --muted:#6b7280; --bg:#f0f4f8; --card:#fff;
+  }
+  body{margin:0;font-family:system-ui,Arial;background:var(--bg);color:var(--ink);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .app{width:min(980px,100%);background:var(--card);border-radius:18px;box-shadow:0 10px 35px rgba(0,0,0,.12);padding:24px}
+  header h1{margin:0 0 6px;text-align:center;font-size:1.6rem;color:var(--blue)}
+  header p{margin:0 0 8px;text-align:center;color:var(--muted)}
+
+  .info{margin:12px 0}
+  details{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px}
+  details > summary{cursor:pointer;font-weight:700}
+  .info h4{margin:.5rem 0}
+  .info ul{margin:.25rem 0 .75rem 1.2rem}
+  .info code{background:#eef2ff;border:1px solid #c7d2fe;padding:0 6px;border-radius:6px}
+
+  .menu{display:grid;gap:14px;margin:18px 0}
+  .menu button{
+    padding:16px;font-size:1.05rem;border:2px solid transparent;border-radius:14px;cursor:pointer;
+    font-weight:700;color:#fff;transition:.18s box-shadow,.18s border-color,.18s transform;
+    display:flex;align-items:center;justify-content:center;gap:10px
+  }
+  .menu button:hover{transform:translateY(-1px)}
+  .menu button.active{border-color:var(--blue); box-shadow:0 0 0 3px #2563eb33, 0 6px 18px rgba(0,0,0,.08)}
+  .theme-zwaksterk{background:var(--green)}
+  .theme-zwak-vt{background:var(--orange)}
+  .theme-sterk-vt{background:var(--blue)}
+  .theme-vd{background:var(--purple)}
+  .theme-onr{background:var(--red)}
+
+  .chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:6px 0 18px}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;
+    border:2px solid #e5e7eb;background:#f9fafb;color:var(--ink);cursor:pointer;user-select:none;transition:.18s}
+  .chip input{display:none}
+  .chip.active{border-color:var(--blue); box-shadow:0 0 0 3px #2563eb33; background:var(--blue-ghost)}
+
+  .pill{background:var(--blue);color:#fff;border:none;border-radius:999px;padding:10px 18px;cursor:pointer;font-weight:700}
+  .ghost{background:#f3f4f6;border:1px solid #e5e7eb;color:#111;border-radius:10px;padding:8px 12px}
+
+  .prompt{margin:20px 0;padding:22px;background:#f9fafb;border:2px dashed #e5e7eb;border-radius:14px;text-align:center}
+  .prompt h2{margin:0}
+  .options{display:grid;gap:12px;margin:16px 0}
+  .options button{padding:12px;background:#f3f4f6;border:2px solid #ddd;border-radius:12px;cursor:pointer;transition:.18s}
+  .options button:hover{border-color:var(--blue)}
+  .options button.selected{border-color:var(--blue); box-shadow:0 0 0 2px #2563eb33}
+  .options button.correct{background:var(--green); color:#fff; border-color:#0d8b65}
+  .options button.wrong{background:var(--red); color:#fff; border-color:#b91c1c}
+  .feedback{min-height:26px;margin:10px 0;font-weight:700}
+  .ok{color:var(--green)} .bad{color:var(--red)} .hint{color:var(--muted)}
+  .hidden{display:none}
+  .toolbar{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
+  input[type="text"]{padding:10px 12px;border-radius:10px;border:1px solid #d1d5db;min-width:260px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🇳🇱 Nederlandse Grammatica Trainer</h1>
+    <p>Kies een thema en oefen met <b>typen</b> of <b>meerkeuze</b>.</p>
+  </header>
+
+  <!-- MENU -->
+  <div id="menu">
+    <div class="menu">
+      <button class="theme-zwaksterk active" onclick="chooseTheme('ZwakSterk', this)">💡 <b>Sterk of zwak?</b></button>
+      <button class="theme-zwak-vt" onclick="chooseTheme('ZwakVT', this)">✍️ <b>Verleden tijd zwakke ww</b></button>
+      <button class="theme-sterk-vt" onclick="chooseTheme('SterkVT', this)">🔄 <b>Verleden tijd sterke ww</b></button>
+      <button class="theme-vd" onclick="chooseTheme('VD', this)">✅ <b>Voltooid deelwoord</b></button>
+      <button class="theme-onr" onclick="chooseTheme('Onr', this)">⚡ <b>Onregelmatige ww</b></button>
+    </div>
+
+    <!-- Uitleg in het menu -->
+    <div class="info">
+      <details open>
+        <summary>📘 Uitleg bij thema</summary>
+        <div id="infoBodyMenu"></div>
+      </details>
+    </div>
+
+    <div class="chips" id="modeChips">
+      <label class="chip active"><input type="radio" name="mode" value="type" checked> ✍️ Invoeren</label>
+      <label class="chip"><input type="radio" name="mode" value="mc"> 🃏 Meerkeuze</label>
+    </div>
+
+    <div style="text-align:center">
+      <button class="pill" onclick="start()">▶ Start</button>
+    </div>
+  </div>
+
+  <!-- PRAKTIJK -->
+  <div id="practice" class="hidden">
+    <div class="toolbar">
+      <button class="ghost" onclick="backToMenu()">⬅️ Terug</button>
+      <span id="crumb" class="hint"></span>
+    </div>
+
+    <!-- Uitleg boven de opdrachten -->
+    <div class="info">
+      <details open>
+        <summary>📘 Uitleg bij thema</summary>
+        <div id="infoBodyPractice"></div>
+      </details>
+    </div>
+
+    <div class="prompt">
+      <h2 id="question">...</h2>
+      <div class="options hidden" id="options"></div>
+    </div>
+
+    <div id="typeArea" class="toolbar">
+      <input id="answer" type="text" placeholder="typ hier..." />
+      <button id="checkBtn" class="pill">Check</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <div class="toolbar">
+      <button id="nextBtn" class="pill" disabled>Volgende ▶</button>
+      <span>Score: <b id="score">0</b> / <span id="total">0</span> • Reeks: <b id="streak">0</b></span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Helpers */
+const norm = s => (s||'').toString().toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,"'").trim();
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const cloze=(sentence,answers)=>({sentence,answers:Array.isArray(answers)?answers:[answers]});
+
+/* Uitlegteksten per thema (compact & bruikbaar) */
+const INFO = {
+  ZwakSterk: `
+    <h4>Sterk vs. zwak</h4>
+    <ul>
+      <li><b>Zwak</b>: verleden tijd met <code>-te/-de</code> of <code>-ten/-den</code>; klank blijft gelijk (bv. <i>werken → werkte</i>).</li>
+      <li><b>Sterk</b>: klinker wisselt in de verleden tijd (bv. <i>lopen → liep</i>, <i>zingen → zong</i>).</li>
+    </ul>
+    <p><b>'t kofschip</b>-regel (ook: <i>'t fokschaap</i>): stam eindigt op <code>t/f/k/s/ch/p</code> → schrijf <code>-t(e)</code>, anders <code>-d(e)</code>.</p>
+  `,
+  ZwakVT: `
+    <h4>Verleden tijd — zwakke werkwoorden</h4>
+    <ul>
+      <li>Stam + <code>-te/-de</code> (en meervoud <code>-ten/-den</code>).</li>
+      <li>Gebruik <b>'t kofschip</b>: eindigt de stam op <code>t/f/k/s/ch/p</code> → <code>-te</code>, anders <code>-de</code>.</li>
+      <li>Klemtoon en klank blijven gelijk (geen klinkerwisseling).</li>
+    </ul>
+    <p>Voorbeeld: <i>maken → maakte</i>, <i>reizen → reisde</i>, <i>wachten → wachtte</i>.</p>
+  `,
+  SterkVT: `
+    <h4>Verleden tijd — sterke werkwoorden</h4>
+    <ul>
+      <li>Klinkerwisseling in de stam (ablaut), geen <code>-te/-de</code>.</li>
+      <li>Voorbeelden van patronen: <i>i → o</i> (<i>drinken → dronk</i>), <i>ee → a</i> (<i>lezen → las</i>), <i>ij → ee</i> (<i>schrijven → schreef</i>).</li>
+    </ul>
+    <p>Let ook op onregelmatige vormen als <i>doen → deed</i>, <i>gaan → ging</i>.</p>
+  `,
+  VD: `
+    <h4>Voltooid deelwoord</h4>
+    <ul>
+      <li>Meestal <code>ge-</code> + stam + <code>-t/-d</code> (zwak) of <code>-en</code> (sterk): <i>gewerkt, gezongen</i>.</li>
+      <li><b>Geen</b> <code>ge-</code> bij <b>be-, ge-, ver-, her-, ont-, er-</b>: <i>verf + t → geverfd</i> (let op: prefix → <b>geen extra</b> ge- aan het begin).</li>
+      <li>Scheidbare ww: <code>ge</code> tussen voorvoegsel en stam: <i>op<b>ge</b>beld</i>, <i>aan<b>ge</b>zet</i>.</li>
+      <li><code>-t</code> of <code>-d</code>? Gebruik weer <b>'t kofschip</b> op de stam.</li>
+    </ul>
+  `,
+  Onr: `
+    <h4>Onregelmatige werkwoorden (vt)</h4>
+    <ul>
+      <li>Veelvoorkomend: <i>zijn → was/waren</i>, <i>hebben → had/hadden</i>, <i>kunnen → kon/konden</i>, <i>willen → wilde(n)</i>, <i>zullen → zou/zouden</i>.</li>
+      <li>Ook sterke en suppletieve vormen: <i>gaan → ging</i>, <i>doen → deed</i>, <i>zien → zag</i>.</li>
+    </ul>
+  `
+};
+
+/* Oefenzinnen — 15 per thema */
+const THEMES = {
+  ZwakSterk: [
+    cloze("Ze ___ hard om de mop. (lachen)", "zwak"),
+    cloze("We ___ de top van de berg. (halen)", "zwak"),
+    cloze("Ze ___ naar haar favoriete podcast. (luisteren)", "zwak"),
+    cloze("Hij ___ gisteren naar school. (lopen)", "sterk"),
+    cloze("Ik ___ een spannend boek. (lezen)", "sterk"),
+    cloze("Ze ___ een lange brief. (schrijven)", "sterk"),
+    cloze("We ___ brood voor het ontbijt. (bakken)", "sterk"),
+    cloze("Ze ___ een spel in de tuin. (spelen)", "zwak"),
+    cloze("Hij ___ aan een schuur. (bouwen)", "zwak"),
+    cloze("Ik ___ tot laat aan mijn project. (werken)", "zwak"),
+    cloze("Hij ___ een glas water. (drinken)", "sterk"),
+    cloze("Ze ___ de finale met 2–1. (winnen)", "sterk"),
+    cloze("Ik ___ een poster voor school. (tekenen)", "zwak"),
+    cloze("We ___ vorig jaar door Europa. (reizen)", "zwak"),
+    cloze("Ze ___ het hoogste lied. (zingen)", "sterk"),
+  ],
+  ZwakVT: [
+    cloze("Ik ___ de auto. (wassen)", "waste"),
+    cloze("Wij ___ de kamer blauw. (verven)", "verfden"),
+    cloze("Zij ___ tot het einde. (wachten)", "wachtten"),
+    cloze("Jullie ___ een uitnodiging. (mailen)", "mailden"),
+    cloze("Hij ___ het pakket op. (halen)", "haalde"),
+    cloze("We ___ samen huiswerk. (maken)", "maakten"),
+    cloze("Ik ___ een kaart voor oma. (tekenen)", "tekende"),
+    cloze("Zij ___ zachtjes op de deur. (kloppen)", "klopten"),
+    cloze("Hij ___ zijn kamer op. (ruimen)", "ruimde"),
+    cloze("We ___ naar het station. (wandelen)", "wandelden"),
+    cloze("Ik ___ op een antwoord. (rekenen)", "rekende"),
+    cloze("Zij ___ het raam wijd open. (openen)", "openden"),
+    cloze("Hij ___ snel naar huis. (fietsen)", "fietste"),
+    cloze("We ___ het spel nog een keer. (spelen)", "speelden"),
+    cloze("Ik ___ vorige week naar Parijs. (reizen)", "reisde"),
+  ],
+  SterkVT: [
+    cloze("Ik ___ naar het park. (lopen)", "liep"),
+    cloze("Zij ___ het boek onder de bank. (vinden)", "vond"),
+    cloze("We ___ de wedstrijd ruim. (winnen)", "wonnen"),
+    cloze("Hij ___ in de rivier. (zwemmen)", "zwom"),
+    cloze("Ik ___ een lange brief. (schrijven)", "schreef"),
+    cloze("Zij ___ naar huis. (gaan)", "ging"),
+    cloze("We ___ thee in de pauze. (drinken)", "dronken"),
+    cloze("Hij ___ het licht uit. (doen)", "deed"),
+    cloze("Ik ___ mijn ontbijt snel op. (eten)", "at"),
+    cloze("Zij ___ pas om acht uur. (komen)", "kwam"),
+    cloze("We ___ het antwoord meteen. (zien)", "zagen"),
+    cloze("Hij ___ het boek uit de kast. (nemen)", "nam"),
+    cloze("Ik ___ de bal ver weg. (schieten)", "schoot"),
+    cloze("Zij ___ de deur dicht. (sluiten)", "sloot"),
+    cloze("We ___ een nieuwe jas. (krijgen)", "kregen"),
+  ],
+  VD: [
+    cloze("Hij heeft de kamer netjes ___. (poetsen)", "gepoetst"),
+    cloze("Wij hebben de deur ___. (sluiten)", "gesloten"),
+    cloze("Ik heb een taart ___. (bakken)", "gebakken"),
+    cloze("Zij heeft de hond ___. (uitlaten)", "uitgelaten"),
+    cloze("We hebben hard ___. (werken)", "gewerkt"),
+    cloze("Hij heeft de film ___. (zien)", "gezien"),
+    cloze("Wij hebben het hek ___. (verven)", "geverfd"),
+    cloze("Ik heb een brief ___. (schrijven)", "geschreven"),
+    cloze("Zij heeft veel ___. (wandelen)", "gewandeld"),
+    cloze("We hebben de bal ___. (trappen)", "getrapt"),
+    cloze("Hij is naar school ___. (gaan)", "gegaan"),
+    cloze("Ik ben laat ___. (komen)", "gekomen"),
+    cloze("Zij heeft haar jas ___. (aandoen)", "aangedaan"),
+    cloze("We hebben de kast ___. (openen)", "geopend"),
+    cloze("Hij heeft een lied ___. (zingen)", "gezongen"),
+  ],
+  Onr: [
+    cloze("Ik ___ moe. (zijn, vt)", "was"),
+    cloze("Wij ___ blij. (zijn, vt)", "waren"),
+    cloze("Hij ___ veel geduld. (hebben, vt)", "had"),
+    cloze("Zij ___ geen tijd. (hebben, vt)", "hadden"),
+    cloze("Ik ___ naar huis. (willen, vt)", "wilde"),
+    cloze("Wij ___ langer blijven. (willen, vt)", "wilden"),
+    cloze("Hij ___ niet komen. (kunnen, vt)", "kon"),
+    cloze("Zij ___ helpen. (kunnen, vt)", "konden"),
+    cloze("Ik ___ liever thuis. (zullen, vt)", "zou"),
+    cloze("Wij ___ morgen terug. (zullen, vt)", "zouden"),
+    cloze("Ik ___ naar buiten. (gaan, vt)", "ging"),
+    cloze("Hij ___ de deur open. (doen, vt)", "deed"),
+    cloze("Wij ___ een kaart. (schrijven, vt)", "schreven"),
+    cloze("Ik ___ een vallende ster. (zien, vt)", "zag"),
+    cloze("Zij ___ samen. (eten, vt)", "aten"),
+  ]
+};
+
+/* State */
+let theme='ZwakSterk',mode='type',pool=[],idx=-1,score=0,streak=0;
+
+/* Info rendering */
+function renderInfo(){
+  const html = INFO[theme] || '';
+  document.getElementById('infoBodyMenu').innerHTML = html;
+  document.getElementById('infoBodyPractice').innerHTML = html;
+}
+
+/* Menu */
+function chooseTheme(t,btn){
+  theme=t;
+  document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderInfo();
+}
+document.querySelectorAll('#modeChips .chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('#modeChips .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    chip.querySelector('input').checked = true;
+  });
+});
+renderInfo(); // initial
+
+/* Oefenen */
+function start(){
+  mode=document.querySelector('input[name="mode"]:checked').value;
+  pool = shuffle([...THEMES[theme]]);
+  idx=-1; score=0; streak=0;
+  document.getElementById('score').textContent=0;
+  document.getElementById('total').textContent=pool.length;
+  document.getElementById('streak').textContent=0;
+  document.getElementById('crumb').textContent = theme;
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('practice').classList.remove('hidden');
+  renderInfo();
+  next();
+}
+
+function next(){
+  idx++; if(idx>=pool.length) idx=0;
+  const item = pool[idx];
+  const qEl = document.getElementById('question');
+  const optsEl = document.getElementById('options');
+  const typeArea = document.getElementById('typeArea');
+  const fb = document.getElementById('feedback');
+  fb.textContent=''; document.getElementById('nextBtn').disabled=true;
+  qEl.textContent = item.sentence;
+
+  if(mode==='type'){
+    typeArea.classList.remove('hidden');
+    optsEl.classList.add('hidden');
+    document.getElementById('answer').value='';
+  }else{
+    typeArea.classList.add('hidden');
+    optsEl.innerHTML=''; optsEl.classList.remove('hidden');
+    const correct=item.answers[0];
+    let choices=[correct];
+    while(choices.length<4){
+      const r=pool[Math.floor(Math.random()*(pool.length))];
+      const cand=r.answers[0];
+      if(!choices.includes(cand)) choices.push(cand);
+    }
+    shuffle(choices).forEach(c=>{
+      const b=document.createElement('button'); b.textContent=c;
+      b.onclick=()=>checkMC(c,correct,b);
+      optsEl.appendChild(b);
+    });
+  }
+}
+
+function checkType(){
+  const item=pool[idx];
+  const val=norm(document.getElementById('answer').value);
+  const fb=document.getElementById('feedback');
+  let ok=item.answers.some(a=>norm(a)===val);
+  if(ok){ score++; streak++; fb.innerHTML='<span class="ok">✅ Goed!</span>'; }
+  else { streak=0; fb.innerHTML='<span class="bad">✖ Fout.</span> <span class="hint">Juist: <b>'+item.answers.join(' / ')+'</b></span>'; }
+  update();
+}
+
+function checkMC(choice,correct,btn){
+  [...document.getElementById('options').children].forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const fb=document.getElementById('feedback');
+  if(choice===correct){
+    btn.classList.add('correct'); score++; streak++;
+    fb.innerHTML='<span class="ok">✅ Goed!</span>';
+  }else{
+    btn.classList.add('wrong'); streak=0;
+    fb.innerHTML='<span class="bad">✖ Fout.</span> <span class="hint">Juist: <b>'+correct+'</b></span>';
+  }
+  [...document.getElementById('options').children].forEach(b=>b.disabled=true);
+  update();
+}
+
+function update(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('streak').textContent=streak;
+  document.getElementById('nextBtn').disabled=false;
+}
+
+function backToMenu(){
+  document.getElementById('menu').classList.remove('hidden');
+  document.getElementById('practice').classList.add('hidden');
+}
+
+document.getElementById('checkBtn').onclick=checkType;
+document.getElementById('nextBtn').onclick=next;
+</script>
+</body>
+</html>
